@@ -108,6 +108,19 @@ parse_args() {
     optind="$OPTIND"
 }
 
+## curl version compatibility
+curl_compat() {
+    curl_version="$(curl -V | head -1 | cut -d' ' -f2)"
+    curl_v_major="$(cut -d. -f1 <<<"$curl_version")"
+    curl_v_minor="$(cut -d. -f2 <<<"$curl_version")"
+    # curl_v_patch="$(cut -d. -f3 <<<"$curl_version")"
+    if [[ "$curl_v_major" -lt 7 || ( "$curl_v_major" -eq 7 && "$curl_v_minor" -lt 76 ) ]]; then
+        curl_param_fail='--fail'
+    else
+        curl_param_fail='--fail-with-body'
+    fi
+}
+
 ## set token to a state file
 set-token() {
     read -rp 'Bot API token: ' token
@@ -138,7 +151,7 @@ load-token() {
         load-token
     fi
     base_uri="https://api.telegram.org/bot${token}"
-    bot_name="$(jq -er '.result.username' <<<"$(curl -LSsg --fail-with-body "$base_uri/getMe")")"
+    bot_name="$(jq -er '.result.username' <<<"$(curl -LSsg "$curl_param_fail" "$base_uri/getMe")")"
 }
 
 ## interactive add chat to chat list
@@ -157,7 +170,7 @@ add-chat() {
 
     updates_offset=-1
     while true; do
-        updates="$(curl -LSsg --fail-with-body \
+        updates="$(curl -LSsg "$curl_param_fail" \
             \
             -d "offset=$updates_offset" \
             -d "timeout=$poll_timeout" \
@@ -202,7 +215,7 @@ remove-chat() {
 send_message() {
     printf "Sending message to '%s'... " "$3"
     if result="$(
-        curl -LSsg --fail-with-body \
+        curl -LSsg "$curl_param_fail" \
             \
             -d "chat_id=$2" \
             -d "text=$1" \
@@ -294,6 +307,11 @@ while [[ "$#" -gt 0 ]]; do
         shift
     fi
 done
+
+curl_param_fail='--fail-with-body'
+
+# curl version compatibility
+curl_compat
 
 # command to perform
 case "${cmd:-usage}" in
