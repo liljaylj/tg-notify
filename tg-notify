@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+# vim: sw=4 ts=4 et ai
+
+## Notify using Telegram Bot API.
+## Extra dependencies:
+## - bash
+## - coreutils
+## - util-linux
+## - sed
+## - curl
+## - jq
+
+## You can change configuration using environment variables. Define them or you
+## can place env vars in `tgn-env.sh` file which must be located in current
+## working directory. tg-notify will source it overriding any environment vars
+## default values.
+## Here are config variables with defaults:
+##   TGN_TRACE - print every command executed by this script. Default: unset
+##   TGN_TOKEN - override saved token. Default: unset
+##   TGN_POLL_TIMEOUT - poll timeout when getting updates from Telegram. Default: 300 (seconds)
+##   TGN_PARSE_MODE - parse mode for message (plain, markdown, html, md1). Default: plain
+
+set -Eeuo pipefail
+shopt -s lastpipe
+
+if [[ -f "$(pwd)/tgn-env.sh" ]]; then
+    # shellcheck source=./tgn-env.sh.example
+    source "$(pwd)/tgn-env.sh"
+fi
+
+## when enabled prints every command executed
+if [[ -n "${TGN_TRACE:-}" ]]; then
+    set -x
+fi
+
+## print usage information
+usage() {
+    echo
+    echo "$app_name usage:" >&2
+    echo >&2
+    echo "$bin_name set-token                                           set Bot API token" >&2
+    echo "$bin_name remove-token                                        remove Bot API token" >&2
+    echo "$bin_name add-chat                                            add chat to chat-list" >&2
+    echo "$bin_name list-chats                                          print chat-list" >&2
+    echo "$bin_name remove-chat [chat id]                               remove chat from chat-list" >&2
+    echo "$bin_name [-f|--format <format>] send [msg] [*chat ids]       send message" >&2
+    echo "$bin_name -h|--help|usage|help                                display this help message" >&2
+    echo >&2
+    echo 'Format options:' >&2
+    echo >&2
+    echo '    2|m|md|markdown       - MarkdownV2' >&2
+    echo '    h|html                - HTML' >&2
+    echo '    1|o|old|markdown1     - Markdown' >&2
+    echo >&2
+    echo 'Note: You can replace "-" prefix in group ID with "@" or enter it after --.' >&2
+    exit "${1:-0}"
+}
+
+parse_arg_format() {
+    case "$1" in
+    2 | m | md | markdown)
+        parse_mode=MarkdownV2
+        ;;
+    h | html)
+        parse_mode=HTML
+        ;;
+    1 | o | old | markdown1)
+        parse_mode=Markdown
+        ;;
+    *)
+        echo "Wrong format option '$1'."
+        usage 1
+        ;;
+    esac
+}
+
+parse_args() {
+    OPTIND=1
+    while getopts ':hx:f:-:' opt; do
+        case "$opt" in
+        f)
+            parse_arg_format "$OPTARG"
+            ;;
+        h)
+            usage
+            ;;
+        -)
+            longarg="${!OPTIND}"
+            case "$OPTARG" in
+            format)
+                parse_arg_format "$longarg"
+                ;;
+            help)
+                usage
+                ;;
+            *)
+                echo "Unsupported flag: '--$OPTARG'" >&2
+                ;;
+            esac
+            OPTIND="$((OPTIND + 1))"
+            ;;
+        *)
+            echo "Unsupported flag: '-$OPTARG'" >&2
+            usage 1
+            ;;
+        esac
+    done
+    optind="$OPTIND"
+}
+
+## set token to a state file
+set-token() {
+    read -rp 'Bot API token: ' token
+    echo "$token" >"$token_file"
+}
+
+## delete token state file
+remove-token() {
+    rm -f "$token_file"
+}
+
+## load token from file
+load-token() {
+    if ! [[ -f "$token_file" ]]; then
+        if ! [[ -t 0 ]]; then
+            echo 'Bot API token not found. Use "set-token" command.' >&2
+            exit 1
+        fi
+        set-token
+    fi
+    read -r token <"$token_file"
+    if [[ -z "${token:-}" ]]; then
+        if ! [[ -t 0 ]]; then
+            echo 'Bot API token not found. Use "set-token" command.' >&2
+            exit 1
+        fi
+        set-token
+        load-token
+    fi
+    base_uri="https://api.telegram.org/bot${token}"
+    bot_name="$(jq -er '.result.username' <<<"$(curl -LSsg --fail-with-body "$base_uri/getMe")")"
+}
+
+## interactive add chat to chat list
+add-chat() {
+    if [[ -z "${token:-}" ]]; then
+        load-token
+    fi
+    connect_id="$(uuidgen)"
+    msg="/connect@$bot_name $connect_id"
+    format='"\(.id) \(.title // .username)"'
+
+    echo 'Paste the string below to Telegram chat you willing to post notifications to.'
+    echo
+    echo "$msg"
+    echo
+
+    updates_offset=-1
+    while true; do
+        updates="$(curl -LSsg --fail-with-body \
+            \
+            -d "offset=$updates_offset" \
+            -d "timeout=$poll_timeout" \
+            -d 'allowed_updates=["messages"]' \
+            \
+            "$base_uri/getUpdates")"
+        updates_offset="$(jq -e '.result[-1] | .update_id + 1' <<<"$updates")"
+        if chat="$(jq -er ".result[] | .message // .edited_message | select(.text == \"$msg\" or .text == \"$msg\") | .chat | $format" <<<"$updates")"; then
+            read -r chat_id chat_name <<<"$chat"
+            touch "$chat_list_file"
+            while read -r chat_id_f _; do
+                if [[ "$chat_id" == "$chat_id_f" ]]; then
+                    echo "'$chat_name' is already in chat list"
+                    return
+                fi
+            done <"$chat_list_file"
+            echo "$chat" >>"$chat_list_file"
+            echo "Added '$chat_name' to chat list."
+            return
+        fi
+    done
+}
+
+## list available chats
+list-chats() {
+    echo "Chat list:"
+    while read -r chat_id chat_name; do
+        echo "${chat_id}: $chat_name"
+    done <"$chat_list_file"
+}
+
+## remove chat from list
+remove-chat() {
+    if [[ -n "${1:-}" ]]; then
+        chat_id="$1"
+    else
+        read -rp 'Chat ID to remove: ' chat_id
+    fi
+    sed -i "/^${chat_id/#@/-}/d" "$chat_list_file"
+}
+
+send_message() {
+    printf "Sending message to '%s'... " "$3"
+    if result="$(
+        curl -LSsg --fail-with-body \
+            \
+            -d "chat_id=$2" \
+            -d "text=$1" \
+            -d "parse_mode=$parse_mode" \
+            \
+            "$base_uri/sendMessage" 2>/dev/null
+    )"; then
+        echo 'OK'
+    else
+        echo 'FAIL'
+        jq '.' <<<"$result"
+    fi
+}
+
+# send message
+send() {
+    if [[ -z "${token:-}" ]]; then
+        load-token
+    fi
+    if [[ -n "${1:-}" ]]; then
+        msg="$1"
+        shift
+    else
+        read -rp 'Message: ' msg
+    fi
+
+    while read -r chat_id chat_name; do
+        if [[ "$#" -gt 0 ]]; then
+            for chat_id_arg in "$@"; do
+                chat_id_arg="${chat_id_arg/#@/-}"
+                if [[ "$chat_id" =~ ^"$chat_id_arg" ]]; then
+                    send_message "$msg" "$chat_id" "$chat_name"
+                fi
+            done
+        else
+            send_message "$msg" "$chat_id" "$chat_name"
+        fi
+    done <"$chat_list_file"
+}
+
+# application name
+app_name='tg-notify'
+
+# binary name
+bin_name="$(basename "$0")"
+
+# application state dir
+state_dir="${XDG_STATE_HOME:-"$HOME/.local/state"}"
+app_state_dir="$state_dir/$app_name"
+
+# initialize state dir
+mkdir -p "$app_state_dir"
+chmod 700 "$state_dir"
+chmod 700 "$app_state_dir"
+
+# file to store Bot API token
+token_file="$app_state_dir/token"
+# file to store chat-list
+chat_list_file="$app_state_dir/chat-list"
+
+# config
+# Bot API token
+token="${TGN_TOKEN:-}"
+# long polling timeout for getUpdates request
+poll_timeout="${TGN_POLL_TIMEOUT:-300}"
+# parse mode
+parse_mode="${TGN_PARSE_MODE:-}"
+
+# bot username
+bot_name=
+
+# read command line options
+optind=1
+parse_args "$@"
+shift "$((optind - 1))"
+
+if [[ -n "${1:-}" ]]; then
+    cmd="$1"
+    shift
+fi
+
+declare -a cmd_args
+while [[ "$#" -gt 0 ]]; do
+    optind=1
+    parse_args "$@"
+    shift "$((optind - 1))"
+    if [[ -n "${1:-}" ]]; then
+        cmd_args+=("$1")
+        shift
+    fi
+done
+
+# command to perform
+case "${cmd:-usage}" in
+set-token)
+    set-token
+    ;;
+remove-token)
+    remove-token
+    ;;
+add-chat)
+    add-chat
+    ;;
+list-chats)
+    list-chats
+    ;;
+remove-chat)
+    remove-chat "${cmd_args[@]}"
+    ;;
+send)
+    send "${cmd_args[@]}"
+    ;;
+usage | help)
+    usage
+    ;;
+*)
+    echo "Unknown command '$cmd'" >&2
+    usage 1
+    ;;
+esac
