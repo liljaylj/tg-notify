@@ -33,6 +33,11 @@ Ensure dependencies are instsalled:
 
 Then, download `tg-notify` shell script and make it executable.
 
+```bash
+curl -LO 'https://github.com/liljaylj/tg-notify/releases/latest/download/tg-notify'
+chmod +x tg-notify
+```
+
 ## Usage
 
 ### Pre-requisites. Bot API.
