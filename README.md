@@ -1,6 +1,6 @@
 # tg-notify
 
-Command line interface to send notifications through Telegram Bot.
+Simple command line interface to send notifications through Telegram Bot.
 
 ## Installation
 
