@@ -85,9 +85,14 @@ parse_args() {
             usage
             ;;
         -)
-            longarg="${!OPTIND}"
             case "$OPTARG" in
             format)
+                longarg="${!OPTIND}"
+                parse_arg_format "$longarg"
+                OPTIND="$((OPTIND + 1))"
+                ;;
+            format=*)
+                longarg="${OPTARG#*=}"
                 parse_arg_format "$longarg"
                 ;;
             help)
@@ -97,7 +102,6 @@ parse_args() {
                 echo "Unsupported flag: '--$OPTARG'" >&2
                 ;;
             esac
-            OPTIND="$((OPTIND + 1))"
             ;;
         *)
             echo "Unsupported flag: '-$OPTARG'" >&2
