@@ -40,9 +40,9 @@ usage() {
     echo >&2
     echo "$bin_name set-token                                           set Bot API token" >&2
     echo "$bin_name remove-token                                        remove Bot API token" >&2
-    echo "$bin_name add-chat                                            add chat to chat-list" >&2
-    echo "$bin_name list-chats                                          print chat-list" >&2
-    echo "$bin_name remove-chat [chat id]                               remove chat from chat-list" >&2
+    echo "$bin_name add|add-chat                                        add chat to chat-list" >&2
+    echo "$bin_name ls|list-chats                                       print chat-list" >&2
+    echo "$bin_name rm|remove-chat [chat id]                            remove chat from chat-list" >&2
     echo "$bin_name [-f|--format <format>] send [msg] [*chat ids]       send message" >&2
     echo "$bin_name -h|--help|usage|help                                display this help message" >&2
     echo >&2
@@ -114,7 +114,7 @@ curl_compat() {
     curl_v_major="$(cut -d. -f1 <<<"$curl_version")"
     curl_v_minor="$(cut -d. -f2 <<<"$curl_version")"
     # curl_v_patch="$(cut -d. -f3 <<<"$curl_version")"
-    if [[ "$curl_v_major" -lt 7 || ( "$curl_v_major" -eq 7 && "$curl_v_minor" -lt 76 ) ]]; then
+    if [[ "$curl_v_major" -lt 7 || ("$curl_v_major" -eq 7 && "$curl_v_minor" -lt 76) ]]; then
         curl_param_fail='--fail'
     else
         curl_param_fail='--fail-with-body'
@@ -321,13 +321,13 @@ set-token)
 remove-token)
     remove-token
     ;;
-add-chat)
+add | add-chat)
     add-chat
     ;;
-list-chats)
+ls | list-chats)
     list-chats
     ;;
-remove-chat)
+rm | remove-chat)
     remove-chat "${cmd_args[@]}"
     ;;
 send)
