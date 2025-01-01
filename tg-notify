@@ -33,10 +33,16 @@ if [[ -n "${TGN_TRACE:-}" ]]; then
     set -x
 fi
 
+## print version information
+print_version() {
+    echo "$app_name $app_version"
+}
+
 ## print usage information
 usage() {
+    print_version
     echo
-    echo "$app_name usage:" >&2
+    echo "Usage:" >&2
     echo >&2
     echo "$bin_name set-token                                           set Bot API token" >&2
     echo "$bin_name remove-token                                        remove Bot API token" >&2
@@ -44,6 +50,7 @@ usage() {
     echo "$bin_name ls|list-chats                                       print chat-list" >&2
     echo "$bin_name rm|remove-chat [chat id]                            remove chat from chat-list" >&2
     echo "$bin_name [-f|--format <format>] send [msg] [*chat ids]       send message" >&2
+    echo "$bin_name -v|--version|version                                print version information" >&2
     echo "$bin_name -h|--help|usage|help                                display this help message" >&2
     echo >&2
     echo 'Format options:' >&2
@@ -76,10 +83,14 @@ parse_arg_format() {
 
 parse_args() {
     OPTIND=1
-    while getopts ':hx:f:-:' opt; do
+    while getopts ':hvf:-:' opt; do
         case "$opt" in
         f)
             parse_arg_format "$OPTARG"
+            ;;
+        v)
+            print_version
+            exit
             ;;
         h)
             usage
@@ -94,6 +105,10 @@ parse_args() {
             format=*)
                 longarg="${OPTARG#*=}"
                 parse_arg_format "$longarg"
+                ;;
+            version)
+                print_version
+                exit
                 ;;
             help)
                 usage
@@ -262,6 +277,8 @@ send() {
 
 # application name
 app_name='tg-notify'
+# application version
+app_version='0.2.0'
 
 # binary name
 bin_name="$(basename "$0")"
@@ -336,6 +353,10 @@ rm | remove-chat)
     ;;
 send)
     send "${cmd_args[@]}"
+    ;;
+version)
+    print_version
+    exit
     ;;
 usage | help)
     usage
