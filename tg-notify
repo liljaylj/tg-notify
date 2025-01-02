@@ -49,6 +49,7 @@ usage() {
     echo "$bin_name add|add-chat                                        add chat to chat-list" >&2
     echo "$bin_name ls|list-chats                                       print chat-list" >&2
     echo "$bin_name rm|remove-chat [chat id]                            remove chat from chat-list" >&2
+    echo "$bin_name e|edit|edit-chat-list                               open chat-list with default editor" >&2
     echo "$bin_name [-f|--format <format>] send [msg] [*chat ids]       send message" >&2
     echo "$bin_name -v|--version|version                                print version information" >&2
     echo "$bin_name -h|--help|usage|help                                display this help message" >&2
@@ -243,6 +244,29 @@ remove-chat() {
     sed -i "/^${chat_id/#@/-}/d" "$chat_list_file"
 }
 
+## edit chat list with default editor
+edit-chat-list() {
+    local editor="${VISUAL:-"${EDITOR:-}"}"
+    if command -v sensible-editor >/dev/null; then
+        editor=sensible-editor
+    fi
+    if [[ -z "$editor" ]]; then
+        for e in nvim vim vi nano; do
+            if command -v "$e" >/dev/null; then
+                editor="$e"
+                break
+            fi
+        done
+    fi
+    if [[ -z "$editor" ]]; then
+        echo 'ERROR: Cannot determine sensible editor.' >&2
+        echo
+        echo "Set default editor with \$VISUAL or \$EDITOR environment variables." >&2
+        exit
+    fi
+    "$editor" "$chat_list_file"
+}
+
 send-message() {
     printf "Sending message to '%s'... " "$3"
     local result
@@ -372,6 +396,9 @@ ls | list-chats)
     ;;
 rm | remove-chat)
     remove-chat "${cmd_args[@]}"
+    ;;
+e | edit | edit-chat-list)
+    edit-chat-list
     ;;
 send)
     send "${cmd_args[@]}"
