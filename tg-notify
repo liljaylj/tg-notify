@@ -216,8 +216,10 @@ add-chat() {
 ## list available chats
 list-chats() {
     echo "Chat list:"
+    idx=1
     while read -r chat_id chat_name; do
-        echo "${chat_id}: $chat_name"
+        echo "(%${idx}) ${chat_id}: $chat_name"
+        idx=$((idx + 1))
     done <"$chat_list_file"
 }
 
@@ -231,7 +233,7 @@ remove-chat() {
     sed -i "/^${chat_id/#@/-}/d" "$chat_list_file"
 }
 
-send_message() {
+send-message() {
     printf "Sending message to '%s'... " "$3"
     if result="$(
         curl -LSsg "$curl_param_fail" \
@@ -261,17 +263,21 @@ send() {
         read -rp 'Message: ' msg
     fi
 
+    idx=1
     while read -r chat_id chat_name; do
         if [[ "$#" -gt 0 ]]; then
             for chat_id_arg in "$@"; do
                 chat_id_arg="${chat_id_arg/#@/-}"
-                if [[ "$chat_id" =~ ^"$chat_id_arg" ]]; then
-                    send_message "$msg" "$chat_id" "$chat_name"
+                if [[ "$chat_id_arg" == '%'* ]] &&
+                    [[ "$idx" == "${chat_id_arg#%}" ]] ||
+                    [[ "$chat_id" == "$chat_id_arg"* ]]; then
+                    send-message "$msg" "$chat_id" "$chat_name"
                 fi
             done
         else
-            send_message "$msg" "$chat_id" "$chat_name"
+            send-message "$msg" "$chat_id" "$chat_name"
         fi
+        idx=$((idx + 1))
     done <"$chat_list_file"
 }
 
