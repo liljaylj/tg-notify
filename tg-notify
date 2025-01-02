@@ -115,12 +115,12 @@ parse_args() {
                 usage
                 ;;
             *)
-                echo "Unsupported flag: '--$OPTARG'" >&2
+                echo "ERROR: Unsupported flag: '--$OPTARG'" >&2
                 ;;
             esac
             ;;
         *)
-            echo "Unsupported flag: '-$OPTARG'" >&2
+            echo "ERROR: Unsupported flag: '-$OPTARG'" >&2
             usage 1
             ;;
         esac
@@ -160,7 +160,7 @@ remove-token() {
 load-token() {
     if ! [[ -f "$token_file" ]]; then
         if ! [[ -t 0 ]]; then
-            echo 'Bot API token not found. Use "set-token" command.' >&2
+            echo 'ERROR: Bot API token not found. Use "set-token" command.' >&2
             exit 1
         fi
         set-token
@@ -168,7 +168,7 @@ load-token() {
     read -r token <"$token_file"
     if [[ -z "${token:-}" ]]; then
         if ! [[ -t 0 ]]; then
-            echo 'Bot API token not found. Use "set-token" command.' >&2
+            echo 'ERROR: Bot API token not found. Use "set-token" command.' >&2
             exit 1
         fi
         set-token
@@ -384,7 +384,7 @@ usage | help)
     usage
     ;;
 *)
-    echo "Unknown command '$cmd'" >&2
+    echo "ERROR: Unknown command '$cmd'" >&2
     usage 1
     ;;
 esac
