@@ -96,6 +96,7 @@ parse_args() {
             usage
             ;;
         -)
+            local longarg
             case "$OPTARG" in
             format)
                 longarg="${!OPTIND}"
@@ -129,6 +130,10 @@ parse_args() {
 
 ## curl version compatibility
 curl_compat() {
+    local curl_version
+    local curl_v_major
+    local curl_v_minor
+    # local curl_v_patch
     curl_version="$(curl -V | head -1 | cut -d' ' -f2)"
     curl_v_major="$(cut -d. -f1 <<<"$curl_version")"
     curl_v_minor="$(cut -d. -f2 <<<"$curl_version")"
@@ -178,17 +183,18 @@ add-chat() {
     if [[ -z "${token:-}" ]]; then
         load-token
     fi
-    connect_id="$(uuidgen)"
-    msg="/connect@$bot_name $connect_id"
-    format='"\(.id) \(.title // .username)"'
+    local msg
+    msg="/connect@$bot_name $(uuidgen)"
+    local format='"\(.id) \(.title // .username)"'
 
     echo 'Paste the string below to Telegram chat you willing to post notifications to.'
     echo
     echo "$msg"
     echo
 
-    updates_offset=-1
+    local updates_offset=-1
     while true; do
+        local updates
         updates="$(curl -LSsg "$curl_param_fail" \
             \
             -d "offset=$updates_offset" \
@@ -197,9 +203,12 @@ add-chat() {
             \
             "$base_uri/getUpdates")"
         updates_offset="$(jq -e '.result[-1] | .update_id + 1' <<<"$updates")"
+        local chat
         if chat="$(jq -er ".result[] | .message // .edited_message | select(.text == \"$msg\" or .text == \"$msg\") | .chat | $format" <<<"$updates")"; then
+            local chat_id chat_name
             read -r chat_id chat_name <<<"$chat"
             touch "$chat_list_file"
+            local chat_id_f
             while read -r chat_id_f _; do
                 if [[ "$chat_id" == "$chat_id_f" ]]; then
                     echo "'$chat_name' is already in chat list"
@@ -216,7 +225,7 @@ add-chat() {
 ## list available chats
 list-chats() {
     echo "Chat list:"
-    idx=1
+    local idx=1 chat_id chat_name
     while read -r chat_id chat_name; do
         echo "(%${idx}) ${chat_id}: $chat_name"
         idx=$((idx + 1))
@@ -225,6 +234,7 @@ list-chats() {
 
 ## remove chat from list
 remove-chat() {
+    local chat_id
     if [[ -n "${1:-}" ]]; then
         chat_id="$1"
     else
@@ -235,6 +245,7 @@ remove-chat() {
 
 send-message() {
     printf "Sending message to '%s'... " "$3"
+    local result
     if result="$(
         curl -LSsg "$curl_param_fail" \
             \
@@ -256,6 +267,7 @@ send() {
     if [[ -z "${token:-}" ]]; then
         load-token
     fi
+    local msg
     if [[ -n "${1:-}" ]]; then
         msg="$1"
         shift
@@ -263,9 +275,10 @@ send() {
         read -rp 'Message: ' msg
     fi
 
-    idx=1
+    local idx=1 chat_id chat_name
     while read -r chat_id chat_name; do
         if [[ "$#" -gt 0 ]]; then
+            local chat_id_arg
             for chat_id_arg in "$@"; do
                 chat_id_arg="${chat_id_arg/#@/-}"
                 if [[ "$chat_id_arg" == '%'* ]] &&
@@ -303,6 +316,12 @@ token_file="$app_state_dir/token"
 # file to store chat-list
 chat_list_file="$app_state_dir/chat-list"
 
+# global variables
+# base uri
+base_uri=
+# bot username
+bot_name=
+
 # config
 # Bot API token
 token="${TGN_TOKEN:-}"
@@ -310,9 +329,6 @@ token="${TGN_TOKEN:-}"
 poll_timeout="${TGN_POLL_TIMEOUT:-300}"
 # parse mode
 parse_mode="${TGN_PARSE_MODE:-}"
-
-# bot username
-bot_name=
 
 # read command line options
 optind=1
