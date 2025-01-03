@@ -5,7 +5,7 @@ disable_changelog = false
 disable_bump_commit = false
 generate_mono_repository_global_tag = true
 generate_mono_repository_package_tags = true
-branch_whitelist = []
+branch_whitelist = ["main"]
 skip_ci = "[skip ci]"
 skip_untracked = false
 pre_bump_hooks = []
@@ -19,7 +19,11 @@ post_package_bump_hooks = []
 
 [changelog]
 path = "CHANGELOG.md"
-authors = []
+template = "remote"
+remote = "github.com"
+repository = "tg-notify"
+owner = "liljaylj"
+authors = [{ signature = "Zhanibek Adilbekov", username = "liljaylj" }]
 
 [bump_profiles]
 

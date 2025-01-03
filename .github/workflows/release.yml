@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install cocogitto
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cog_version='6.2.0'
+          curl -L -o cog.tar.gz \
+            "https://github.com/cocogitto/cocogitto/releases/download/${cog_version}/cocogitto-${cog_version}-x86_64-unknown-linux-musl.tar.gz"
+          tar xf cog.tar.gz
+          install -Dm755 x86_64-unknown-linux-musl/cog ~/.local/bin/cog
+
+      - name: Check conventional commits for latest tag
+        shell: bash
+        run: 'cog check ${{ github.ref_name }}'
+
+      - name: Generate changelog
+        shell: bash
+        run: |
+          cog changelog ${{ github.ref_name }} > release_notes.md
+          echo '[Full Changelog](${{github.server_url}}/${{github.repository}}/blob/${{github.ref_name}}/CHANGELOG.md)' >> release_notes.md
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          draft: true
+          files: tg-notify
+
+permissions:
+  contents: write
