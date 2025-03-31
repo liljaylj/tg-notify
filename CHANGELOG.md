@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.3.2](https://github.com/liljaylj/tg-notify/compare/c8d7a596335c21b88cfa0d9e3ce9f680c9c87335..v0.3.2) - 2025-03-31
+#### Bug Fixes
+- **(send)** multiline message from stdin - ([c8d7a59](https://github.com/liljaylj/tg-notify/commit/c8d7a596335c21b88cfa0d9e3ce9f680c9c87335)) - [@liljaylj](https://github.com/liljaylj)
+
+- - -
+
 ## [v0.3.1](https://github.com/liljaylj/tg-notify/compare/b074a8768ac387f57e5c844c287112f8e7b3651c..v0.3.1) - 2025-01-03
 #### Continuous Integration
 - auto-release with changelog - ([b074a87](https://github.com/liljaylj/tg-notify/commit/b074a8768ac387f57e5c844c287112f8e7b3651c)) - [@liljaylj](https://github.com/liljaylj)
