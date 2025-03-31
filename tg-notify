@@ -295,8 +295,10 @@ send() {
     if [[ -n "${1:-}" ]]; then
         msg="$1"
         shift
-    else
+    elif [[ -t 0 ]]; then
         read -rp 'Message: ' msg
+    else
+        msg="$(cat)"
     fi
 
     local idx=1 chat_id chat_name
