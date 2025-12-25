@@ -225,6 +225,11 @@ add-chat() {
 
 ## list available chats
 list-chats() {
+    if [[ ! -s "$chat_list_file" ]]; then
+        echo "Chat list: empty"
+        return
+    fi
+
     echo "Chat list:"
     local idx=1 chat_id chat_name
     while read -r chat_id chat_name; do
@@ -288,6 +293,11 @@ send-message() {
 
 # send message
 send() {
+    if [[ ! -s "$chat_list_file" ]]; then
+        echo "WARNING: Empty chat list file, no message will be sent!"
+        return
+    fi
+
     if [[ -z "${token:-}" ]]; then
         load-token
     fi
@@ -341,6 +351,8 @@ chmod 700 "$app_state_dir"
 token_file="$app_state_dir/token"
 # file to store chat-list
 chat_list_file="$app_state_dir/chat-list"
+# always initialize the chat list file to avoid errors when reading it
+touch $chat_list_file
 
 # global variables
 # base uri
