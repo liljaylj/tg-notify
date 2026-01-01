@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          cog_version='6.2.0'
+          cog_version='6.5.0'
           curl -L -o cog.tar.gz \
             "https://github.com/cocogitto/cocogitto/releases/download/${cog_version}/cocogitto-${cog_version}-x86_64-unknown-linux-musl.tar.gz"
           tar xf cog.tar.gz
