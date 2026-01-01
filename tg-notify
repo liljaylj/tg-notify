@@ -60,7 +60,8 @@ usage() {
     echo '    h|html                - HTML' >&2
     echo '    1|o|old|markdown1     - Markdown' >&2
     echo >&2
-    echo 'Note: You can replace "-" prefix in group ID with "@" or enter it after --.' >&2
+    echo 'Notes: You can replace "-" prefix in group ID with "@" or enter it after --.' >&2
+    echo "       Specify '-' instead of <msg> to read the message from stdin." >&2
     exit "${1:-0}"
 }
 
@@ -303,12 +304,18 @@ send() {
     fi
     local msg
     if [[ -n "${1:-}" ]]; then
-        msg="$1"
-        shift
+        if [[ "$1" == "-" ]]; then
+            msg="$(cat)"
+            shift
+        else
+            msg="$1"
+            shift
+        fi
     elif [[ -t 0 ]]; then
         read -rp 'Message: ' msg
     else
-        msg="$(cat)"
+        echo "ERROR: Message argument required (use '-' to read from stdin)." >&2
+        exit 1
     fi
 
     local idx=1 chat_id chat_name
