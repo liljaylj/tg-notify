@@ -22,7 +22,7 @@ yay -S tg-notify
 
 ### Manual
 
-Ensure dependencies are instsalled:
+Ensure dependencies are installed:
 
 - bash
 - coreutils
