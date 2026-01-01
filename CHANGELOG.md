@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.4.0](https://github.com/liljaylj/tg-notify/compare/f866567d4064b46e87102346796c485045f8d9ff..v0.4.0) - 2026-01-01
+#### Features
+- allow to read msg from stdin with send cmd - ([a483c2a](https://github.com/liljaylj/tg-notify/commit/a483c2ac738d4a2eca6faf4e4c0f432844616c84)) - Emanuele Petriglia
+#### Bug Fixes
+- do not crash on empty chat list - ([f866567](https://github.com/liljaylj/tg-notify/commit/f866567d4064b46e87102346796c485045f8d9ff)) - Emanuele Petriglia
+#### Continuous Integration
+- update cocogitto - ([6ef4781](https://github.com/liljaylj/tg-notify/commit/6ef47815ba9463609e6a1933b5d82be3ad1d60c1)) - [@liljaylj](https://github.com/liljaylj)
+#### Miscellaneous Chores
+- (**cog**) ignore merge commits - ([3a44b73](https://github.com/liljaylj/tg-notify/commit/3a44b738c66e7652436a62f3442f3c2eed35a0f2)) - [@liljaylj](https://github.com/liljaylj)
+
+- - -
+
 ## [v0.3.2](https://github.com/liljaylj/tg-notify/compare/c8d7a596335c21b88cfa0d9e3ce9f680c9c87335..v0.3.2) - 2025-03-31
 #### Bug Fixes
 - **(send)** multiline message from stdin - ([c8d7a59](https://github.com/liljaylj/tg-notify/commit/c8d7a596335c21b88cfa0d9e3ce9f680c9c87335)) - [@liljaylj](https://github.com/liljaylj)
