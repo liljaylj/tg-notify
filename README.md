@@ -88,14 +88,16 @@ This will send '‼️ Backup failed!' message to 2 groups: `Test Group 1`, `Tes
 ### Command usage
 
 ```
-tg-notify usage:
+Usage:
 
 tg-notify set-token                                           set Bot API token
 tg-notify remove-token                                        remove Bot API token
-tg-notify add-chat                                            add chat to chat-list
-tg-notify list-chats                                          print chat-list
-tg-notify remove-chat [chat id]                               remove chat from chat-list
+tg-notify add|add-chat                                        add chat to chat-list
+tg-notify ls|list-chats                                       print chat-list
+tg-notify rm|remove-chat [chat id]                            remove chat from chat-list
+tg-notify e|edit|edit-chat-list                               open chat-list with default editor
 tg-notify [-f|--format <format>] send [msg] [*chat ids]       send message
+tg-notify -v|--version|version                                print version information
 tg-notify -h|--help|usage|help                                display this help message
 
 Format options:
@@ -104,5 +106,6 @@ Format options:
     h|html                - HTML
     1|o|old|markdown1     - Markdown
 
-Note: You can replace "-" prefix in group ID with "@" or enter it after --.
+Notes: You can replace "-" prefix in group ID with "@" or enter it after --.
+       Specify '-' instead of <msg> to read the message from stdin.
 ```
